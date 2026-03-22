@@ -2,6 +2,7 @@ import { EvaluationResult } from "@/types/evaluation";
 import { ScoreBadge } from "./ScoreBadge";
 import { ScoreVectorChart } from "./ScoreVectorChart";
 import { ImproveResumeButton } from "./ImproveResumeButton";
+import { CoverLetterButton } from "./CoverLetterButton";
 
 interface EvaluationResultsProps {
   result: EvaluationResult;
@@ -130,8 +131,14 @@ export function EvaluationResults({
         <h3 className="text-sm font-medium text-gray-500 uppercase tracking-wide mb-4">
           Next Steps
         </h3>
-        <div className="flex gap-3">
+        <div className="flex gap-3 flex-wrap">
           <ImproveResumeButton
+            resumeText={resumeText}
+            jobDescription={jobDescription}
+            evaluation={result}
+            model={result.model_used}
+          />
+          <CoverLetterButton
             resumeText={resumeText}
             jobDescription={jobDescription}
             evaluation={result}
