@@ -1,6 +1,7 @@
 import { EvaluationResult } from "@/types/evaluation";
 import { ScoreBadge } from "./ScoreBadge";
 import { ScoreVectorChart } from "./ScoreVectorChart";
+import { ImproveResumeButton } from "./ImproveResumeButton";
 
 interface EvaluationResultsProps {
   result: EvaluationResult;
@@ -13,9 +14,6 @@ export function EvaluationResults({
   resumeText,
   jobDescription,
 }: EvaluationResultsProps) {
-  // resumeText and jobDescription are passed through for child components (improve, cover letter)
-  void resumeText;
-  void jobDescription;
   return (
     <div className="mt-10 space-y-6">
       <div className="border-t pt-8">
@@ -124,6 +122,21 @@ export function EvaluationResults({
           {result.reasoning.split("\n").map((paragraph, i) =>
             paragraph.trim() ? <p key={i}>{paragraph}</p> : null
           )}
+        </div>
+      </div>
+
+      {/* Actions */}
+      <div className="p-6 bg-white border border-gray-200 rounded-xl">
+        <h3 className="text-sm font-medium text-gray-500 uppercase tracking-wide mb-4">
+          Next Steps
+        </h3>
+        <div className="flex gap-3">
+          <ImproveResumeButton
+            resumeText={resumeText}
+            jobDescription={jobDescription}
+            evaluation={result}
+            model={result.model_used}
+          />
         </div>
       </div>
     </div>
