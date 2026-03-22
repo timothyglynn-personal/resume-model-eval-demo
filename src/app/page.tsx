@@ -17,6 +17,7 @@ export default function Home() {
   const [result, setResult] = useState<EvaluationResult | null>(null);
   const [jobDescription, setJobDescription] = useState("");
   const [selectedModel, setSelectedModel] = useState(DEFAULT_MODEL);
+  const [candidateName, setCandidateName] = useState("");
   const [inputMode, setInputMode] = useState<"url" | "text">("url");
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -67,6 +68,7 @@ export default function Home() {
           jobText: inputMode === "text" ? jobText : "",
           resumeText,
           model: selectedModel,
+          candidateName: candidateName.trim() || undefined,
         }),
       });
 
@@ -223,6 +225,21 @@ export default function Home() {
           {/* Model selector */}
           <ModelSelector value={selectedModel} onChange={setSelectedModel} />
 
+          {/* Candidate name (optional) */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Candidate Name{" "}
+              <span className="text-gray-400 font-normal">(optional)</span>
+            </label>
+            <input
+              type="text"
+              value={candidateName}
+              onChange={(e) => setCandidateName(e.target.value)}
+              placeholder="Save results to track trends over time"
+              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-900 focus:border-transparent outline-none"
+            />
+          </div>
+
           {/* Error */}
           {error && (
             <div className="p-4 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">
@@ -276,7 +293,7 @@ export default function Home() {
         )}
 
         <footer className="mt-16 pt-8 border-t text-center text-sm text-gray-400">
-          Powered by Claude (Anthropic) &middot; Resume data is not stored
+          Powered by Claude (Anthropic)
         </footer>
       </div>
     </div>

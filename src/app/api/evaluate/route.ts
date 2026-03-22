@@ -4,6 +4,8 @@ import axios from "axios";
 import * as cheerio from "cheerio";
 import { EvaluationResult } from "@/types/evaluation";
 import { validateModel } from "@/lib/models";
+import { saveEvaluation } from "@/lib/candidate-store";
+import { StoredEvaluation } from "@/types/candidate";
 
 const anthropic = new Anthropic({
   apiKey: process.env.ANTHROPIC_API_KEY,
@@ -66,7 +68,7 @@ async function scrapeJobPage(url: string): Promise<string> {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { jobUrl, jobText, resumeText, model } = body;
+    const { jobUrl, jobText, resumeText, model, candidateName } = body;
 
     if (!resumeText?.trim()) {
       return NextResponse.json(
@@ -174,6 +176,20 @@ Return ONLY the JSON object, no markdown formatting or code blocks.`,
     }
 
     const evaluation: EvaluationResult = JSON.parse(cleanJson);
+
+    // Persist evaluation if candidate name provided
+    if (candidateName?.trim()) {
+      const stored: StoredEvaluation = {
+        id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+        candidate_name: candidateName.trim(),
+        timestamp: new Date().toISOString(),
+        role_title: evaluation.role_title,
+        job_description_snippet: jobDescription.slice(0, 200),
+        model_used: selectedModel,
+        evaluation,
+      };
+      await saveEvaluation(stored);
+    }
 
     return NextResponse.json({
       success: true,

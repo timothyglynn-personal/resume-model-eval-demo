@@ -10,6 +10,7 @@
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.80.0",
+    "@vercel/kv": "^3.0.0",
     "axios": "^1.13.6",
     "cheerio": "^1.2.0",
     "mammoth": "^1.12.0",
