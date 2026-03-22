@@ -3,6 +3,8 @@
 import { useState, useRef } from "react";
 import { EvaluationResult } from "@/types/evaluation";
 import { EvaluationResults } from "@/components/EvaluationResults";
+import { ModelSelector } from "@/components/ModelSelector";
+import { DEFAULT_MODEL } from "@/lib/models";
 
 export default function Home() {
   const [jobUrl, setJobUrl] = useState("");
@@ -14,6 +16,7 @@ export default function Home() {
   const [error, setError] = useState("");
   const [result, setResult] = useState<EvaluationResult | null>(null);
   const [jobDescription, setJobDescription] = useState("");
+  const [selectedModel, setSelectedModel] = useState(DEFAULT_MODEL);
   const [inputMode, setInputMode] = useState<"url" | "text">("url");
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -63,6 +66,7 @@ export default function Home() {
           jobUrl: inputMode === "url" ? jobUrl : "",
           jobText: inputMode === "text" ? jobText : "",
           resumeText,
+          model: selectedModel,
         }),
       });
 
@@ -215,6 +219,9 @@ export default function Home() {
               className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-900 focus:border-transparent outline-none resize-y"
             />
           </div>
+
+          {/* Model selector */}
+          <ModelSelector value={selectedModel} onChange={setSelectedModel} />
 
           {/* Error */}
           {error && (

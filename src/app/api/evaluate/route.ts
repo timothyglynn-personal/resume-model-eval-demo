@@ -3,6 +3,7 @@ import Anthropic from "@anthropic-ai/sdk";
 import axios from "axios";
 import * as cheerio from "cheerio";
 import { EvaluationResult } from "@/types/evaluation";
+import { validateModel } from "@/lib/models";
 
 const anthropic = new Anthropic({
   apiKey: process.env.ANTHROPIC_API_KEY,
@@ -99,7 +100,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const selectedModel = model || "claude-sonnet-4-20250514";
+    const selectedModel = validateModel(model);
 
     const message = await anthropic.messages.create({
       model: selectedModel,
