@@ -1,43 +1,8 @@
 "use client";
 
 import { useState, useRef } from "react";
-
-interface EvaluationResult {
-  score: number;
-  role_title: string;
-  missing_keywords: string[];
-  reasoning: string;
-}
-
-function ScoreBadge({ score }: { score: number }) {
-  let color = "bg-red-100 text-red-800";
-  let label = "Poor Match";
-  if (score >= 90) {
-    color = "bg-green-100 text-green-800";
-    label = "Exceptional Match";
-  } else if (score >= 75) {
-    color = "bg-emerald-100 text-emerald-800";
-    label = "Strong Match";
-  } else if (score >= 60) {
-    color = "bg-yellow-100 text-yellow-800";
-    label = "Moderate Match";
-  } else if (score >= 40) {
-    color = "bg-orange-100 text-orange-800";
-    label = "Weak Match";
-  }
-
-  return (
-    <div className="flex items-center gap-4">
-      <div className="text-5xl font-bold tabular-nums">{score}</div>
-      <div>
-        <span className={`inline-block px-3 py-1 rounded-full text-sm font-medium ${color}`}>
-          {label}
-        </span>
-        <div className="text-sm text-gray-500 mt-1">out of 100</div>
-      </div>
-    </div>
-  );
-}
+import { EvaluationResult } from "@/types/evaluation";
+import { EvaluationResults } from "@/components/EvaluationResults";
 
 export default function Home() {
   const [jobUrl, setJobUrl] = useState("");
@@ -48,6 +13,7 @@ export default function Home() {
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState("");
   const [result, setResult] = useState<EvaluationResult | null>(null);
+  const [jobDescription, setJobDescription] = useState("");
   const [inputMode, setInputMode] = useState<"url" | "text">("url");
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -107,6 +73,7 @@ export default function Home() {
       }
 
       setResult(data.evaluation);
+      setJobDescription(data.jobDescription || "");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Evaluation failed");
     } finally {
@@ -128,7 +95,8 @@ export default function Home() {
           </h1>
           <p className="mt-2 text-gray-600">
             Paste a job posting and your resume to get an AI-powered fit
-            evaluation with score, missing keywords, and recommendations.
+            evaluation with score vectors, gap analysis, and actionable
+            recommendations.
           </p>
         </div>
 
@@ -293,52 +261,11 @@ export default function Home() {
 
         {/* Results */}
         {result && (
-          <div className="mt-10 space-y-6">
-            <div className="border-t pt-8">
-              <h2 className="text-xl font-semibold mb-1">Results</h2>
-              {result.role_title && (
-                <p className="text-gray-500 text-sm mb-4">
-                  {result.role_title}
-                </p>
-              )}
-            </div>
-
-            {/* Score */}
-            <div className="p-6 bg-white border border-gray-200 rounded-xl">
-              <ScoreBadge score={result.score} />
-            </div>
-
-            {/* Missing Keywords */}
-            {result.missing_keywords.length > 0 && (
-              <div className="p-6 bg-white border border-gray-200 rounded-xl">
-                <h3 className="text-sm font-medium text-gray-500 uppercase tracking-wide mb-3">
-                  Missing Keywords
-                </h3>
-                <div className="flex flex-wrap gap-2">
-                  {result.missing_keywords.map((keyword, i) => (
-                    <span
-                      key={i}
-                      className="px-3 py-1 bg-amber-50 text-amber-800 border border-amber-200 rounded-full text-sm"
-                    >
-                      {keyword}
-                    </span>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* Reasoning */}
-            <div className="p-6 bg-white border border-gray-200 rounded-xl">
-              <h3 className="text-sm font-medium text-gray-500 uppercase tracking-wide mb-3">
-                Analysis
-              </h3>
-              <div className="prose prose-gray prose-sm max-w-none">
-                {result.reasoning.split("\n").map((paragraph, i) => (
-                  <p key={i}>{paragraph}</p>
-                ))}
-              </div>
-            </div>
-          </div>
+          <EvaluationResults
+            result={result}
+            resumeText={resumeText}
+            jobDescription={jobDescription}
+          />
         )}
 
         <footer className="mt-16 pt-8 border-t text-center text-sm text-gray-400">

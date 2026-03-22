@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import Anthropic from "@anthropic-ai/sdk";
 import axios from "axios";
 import * as cheerio from "cheerio";
+import { EvaluationResult } from "@/types/evaluation";
 
 const anthropic = new Anthropic({
   apiKey: process.env.ANTHROPIC_API_KEY,
@@ -61,17 +62,10 @@ async function scrapeJobPage(url: string): Promise<string> {
   }
 }
 
-interface EvaluationResult {
-  score: number;
-  missing_keywords: string[];
-  reasoning: string;
-  role_title: string;
-}
-
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { jobUrl, jobText, resumeText } = body;
+    const { jobUrl, jobText, resumeText, model } = body;
 
     if (!resumeText?.trim()) {
       return NextResponse.json(
@@ -105,36 +99,50 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    const selectedModel = model || "claude-sonnet-4-20250514";
+
     const message = await anthropic.messages.create({
-      model: "claude-sonnet-4-20250514",
-      max_tokens: 1500,
+      model: selectedModel,
+      max_tokens: 3000,
       messages: [
         {
           role: "user",
-          content: `You are an expert recruiter and resume evaluator. Analyze how well this resume matches the given job description.
+          content: `You are a senior hiring manager evaluating a resume against a job description. Be direct, specific, and honest—not encouraging. Your job is to tell this candidate exactly where they stand and what they need to fix.
+
+Score the resume against these 5 vectors. Each vector is scored 0-20, and the sum is the overall score (0-100):
+
+1. **Skill Match** — Does the resume demonstrate the specific hard skills, tools, technologies, and certifications the role requires?
+2. **Trajectory** — Does the candidate's career progression suggest they're ready for this level? Are they trending toward this role or lateral/backwards?
+3. **Relevance of Experience** — How directly applicable is their past work to what this role actually does day-to-day?
+4. **Execution and Results** — Does the resume show measurable impact, shipped work, and outcomes—or just responsibilities?
+5. **Thinking and Communication** — Based on how the resume is written, does this person communicate clearly and show strategic thinking?
 
 Return your evaluation as JSON with exactly this structure:
 {
-  "score": <number 0-100>,
+  "overall_score": <sum of 5 vector scores, 0-100>,
   "role_title": "<the job title from the posting>",
-  "missing_keywords": ["<skill or keyword from the job that's missing from the resume>", ...],
-  "reasoning": "<2-3 paragraph explanation of the fit, covering strengths, gaps, and specific recommendations>"
+  "model_used": "${selectedModel}",
+  "score_vectors": [
+    { "name": "Skill Match", "score": <0-20>, "explanation": "<1-2 sentences>" },
+    { "name": "Trajectory", "score": <0-20>, "explanation": "<1-2 sentences>" },
+    { "name": "Relevance of Experience", "score": <0-20>, "explanation": "<1-2 sentences>" },
+    { "name": "Execution and Results", "score": <0-20>, "explanation": "<1-2 sentences>" },
+    { "name": "Thinking and Communication", "score": <0-20>, "explanation": "<1-2 sentences>" }
+  ],
+  "strengths": ["<specific strength referencing resume content>", "<another>", "<another>"],
+  "possible_gaps": ["<specific gap with why it matters for this role>", "<another>", "<another>"],
+  "areas_to_address": ["<what the candidate should do in their application to compensate>", "<another>"],
+  "missing_keywords": ["<skill or keyword from the job missing from the resume>"],
+  "reasoning": "<3-4 paragraph honest assessment. Reference specific content from both documents. Explain why this candidate would or would not advance past screening. If the score is below 75, say clearly what's missing. If above 85, explain what makes them stand out. No generic encouragement.>"
 }
 
-Scoring guide:
-- 90-100: Exceptional match — nearly all required and preferred qualifications met
-- 75-89: Strong match — most required qualifications met, minor gaps
-- 60-74: Moderate match — core qualifications met but notable gaps in required skills
-- 40-59: Weak match — some relevant experience but significant gaps
-- 0-39: Poor match — major misalignment between resume and role requirements
-
-Focus on:
-1. Hard skill alignment (technical skills, tools, certifications)
-2. Experience level match (years, seniority, scope)
-3. Industry/domain relevance
-4. Keyword gaps that an ATS would flag
-
-Be specific in your reasoning — reference actual content from both the resume and job description.
+Rules:
+- Be specific. Reference actual job requirements and actual resume content by name.
+- If the resume uses vague language ("managed projects", "drove results"), penalize Execution and Results.
+- If the resume doesn't mention key required skills, penalize Skill Match—don't assume they have unlisted skills.
+- The overall_score MUST equal the sum of the 5 vector scores.
+- Strengths, gaps, and areas_to_address should each have 2-4 items.
+- Missing keywords should list 5-15 specific terms from the job description not found in the resume.
 
 ---
 
@@ -159,7 +167,9 @@ Return ONLY the JSON object, no markdown formatting or code blocks.`,
     // Parse JSON from response, handling possible markdown wrapping
     let cleanJson = responseText.trim();
     if (cleanJson.startsWith("```")) {
-      cleanJson = cleanJson.replace(/^```(?:json)?\n?/, "").replace(/\n?```$/, "");
+      cleanJson = cleanJson
+        .replace(/^```(?:json)?\n?/, "")
+        .replace(/\n?```$/, "");
     }
 
     const evaluation: EvaluationResult = JSON.parse(cleanJson);
@@ -167,6 +177,7 @@ Return ONLY the JSON object, no markdown formatting or code blocks.`,
     return NextResponse.json({
       success: true,
       evaluation,
+      jobDescription,
       jobDescriptionLength: jobDescription.length,
     });
   } catch (error) {
